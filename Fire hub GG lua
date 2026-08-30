@@ -1,0 +1,366 @@
+-- Firehub Overdrive Script (8-Part Box ESP - Redmi Optimized)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+local Settings = {
+    ShowSelfESP = false,
+    ESPEnabled = true,
+    ButtonLocked = false
+}
+
+local ESPFolder = CoreGui:FindFirstChild("OverdriveBoxESP") or Instance.new("Folder")
+ESPFolder.Name = "OverdriveBoxESP"
+ESPFolder.Parent = CoreGui
+
+-- 1. Main UI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FirehubOverdriveUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 200, 0, 160)
+MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Text = " FIREHUB 8-PART"
+Title.Size = UDim2.new(0.75, 0, 0, 28)
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 13
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local MinimizeBtn = Instance.new("TextButton", MainFrame)
+MinimizeBtn.Text = "-"
+MinimizeBtn.Size = UDim2.new(0.25, 0, 0, 28)
+MinimizeBtn.Position = UDim2.new(0.75, 0, 0, 0)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.Font = Enum.Font.SourceSansBold
+MinimizeBtn.TextSize = 16
+
+local Container = Instance.new("Frame", MainFrame)
+Container.Size = UDim2.new(1, 0, 1, -28)
+Container.Position = UDim2.new(0, 0, 0, 28)
+Container.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+
+local isMinimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    Container.Visible = not isMinimized
+    MainFrame.Size = isMinimized and UDim2.new(0, 200, 0, 28) or UDim2.new(0, 200, 0, 160)
+    MinimizeBtn.Text = isMinimized and "+" or "-"
+end)
+
+local SelfESPBtn = Instance.new("TextButton", Container)
+SelfESPBtn.Text = "Self ESP: OFF"
+SelfESPBtn.Size = UDim2.new(0.9, 0, 0, 32)
+SelfESPBtn.Position = UDim2.new(0.05, 0, 0.1, 0)
+SelfESPBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SelfESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+SelfESPBtn.MouseButton1Click:Connect(function()
+    Settings.ShowSelfESP = not Settings.ShowSelfESP
+    SelfESPBtn.Text = "Self ESP: " .. (Settings.ShowSelfESP and "ON" or "OFF")
+end)
+
+local ToggleESPBtn = Instance.new("TextButton", Container)
+ToggleESPBtn.Text = "ESP: ON"
+ToggleESPBtn.Size = UDim2.new(0.9, 0, 0, 32)
+ToggleESPBtn.Position = UDim2.new(0.05, 0, 0.5, 0)
+ToggleESPBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ToggleESPBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+ToggleESPBtn.MouseButton1Click:Connect(function()
+    Settings.ESPEnabled = not Settings.ESPEnabled
+    ToggleESPBtn.Text = "ESP: " .. (Settings.ESPEnabled and "ON" or "OFF")
+    if not Settings.ESPEnabled then
+        ESPFolder:ClearAllChildren()
+    end
+end)
+
+-- 2. Floating Shoot Button (Hold 3s to Lock/Unlock)
+local ShootBtn = Instance.new("TextButton", ScreenGui)
+ShootBtn.Text = "Shoot Murderer ◯"
+ShootBtn.Size = UDim2.new(0, 240, 0, 55)
+ShootBtn.Position = UDim2.new(0.65, 0, 0.45, 0)
+ShootBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+ShootBtn.BackgroundTransparency = 0.3
+ShootBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ShootBtn.Font = Enum.Font.SourceSans
+ShootBtn.TextSize = 19
+ShootBtn.Active = true
+ShootBtn.Draggable = true
+
+local UICorner = Instance.new("UICorner", ShootBtn)
+UICorner.CornerRadius = UDim.new(0, 12)
+
+local UIStroke = Instance.new("UIStroke", ShootBtn)
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(100, 50, 200)
+
+local holdStartTime = 0
+local isHolding = false
+
+ShootBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isHolding = true
+        holdStartTime = tick()
+        
+        task.spawn(function()
+            while isHolding do
+                if tick() - holdStartTime >= 3 then
+                    Settings.ButtonLocked = not Settings.ButtonLocked
+                    ShootBtn.Draggable = not Settings.ButtonLocked
+                    UIStroke.Color = Settings.ButtonLocked and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(100, 50, 200)
+                    ShootBtn.Text = Settings.ButtonLocked and "LOCKED (Hold 3s)" or "Shoot Murderer ◯"
+                    isHolding = false
+                    break
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+ShootBtn.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        if isHolding and (tick() - holdStartTime < 3) then
+            isHolding = false
+            shootMurdererAction()
+        end
+        isHolding = false
+    end
+end)
+
+-- 3. Role Checking Logic
+local function getPlayerRole(player)
+    local char = player.Character
+    local backpack = player:FindFirstChild("Backpack")
+    
+    local function searchContainer(container)
+        if not container then return nil end
+        for _, item in pairs(container:GetChildren()) do
+            if item:IsA("Tool") then
+                local name = item.Name:lower()
+                if name:find("knife") or name:find("blade") then
+                    return "Murderer"
+                elseif name:find("gun") or name:find("revolver") then
+                    return "Sheriff"
+                end
+            end
+        end
+        return nil
+    end
+
+    local role = searchContainer(char) or searchContainer(backpack)
+    if role == "Murderer" then return Color3.fromRGB(255, 0, 0), "Murderer" end
+    if role == "Sheriff" then return Color3.fromRGB(0, 120, 255), "Sheriff" end
+    return Color3.fromRGB(0, 255, 0), "Innocent"
+end
+
+-- 4. 8-Part Hitbox Box ESP Logic (Ghost-Proof & Transparent Wall-Thru)
+local function applyBoxESPToPart(part, color, playerFolder)
+    local boxName = part.Name .. "_BoxESP"
+    local box = playerFolder:FindFirstChild(boxName)
+    
+    if not box then
+        box = Instance.new("BoxHandleAdornment")
+        box.Name = boxName
+        box.AlwaysOnTop = true
+        box.ZIndex = 8
+        box.Transparency = 0.4
+        box.Parent = playerFolder
+    end
+    
+    box.Adornee = part
+    box.Size = part.Size
+    box.Color3 = color
+end
+
+local function isOwnedByPlayer(object)
+    for _, player in pairs(Players:GetPlayers()) do
+        if object:IsDescendantOf(player.Character) or object:IsDescendantOf(player.Backpack) then
+            return true
+        end
+    end
+    return false
+end
+
+local function updateESP()
+    if not Settings.ESPEnabled then return end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player == LocalPlayer and not Settings.ShowSelfESP then
+            local oldEsp = ESPFolder:FindFirstChild(player.Name)
+            if oldEsp then oldEsp:Destroy() end
+            continue
+        end
+
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+            local color, roleName = getPlayerRole(player)
+            
+            local playerFolder = ESPFolder:FindFirstChild(player.Name)
+            if not playerFolder then
+                playerFolder = Instance.new("Folder")
+                playerFolder.Name = player.Name
+                playerFolder.Parent = ESPFolder
+            end
+
+            -- Exactly 8 Primary Body Parts (Fallback for both R6 and R15 character rigs)
+            local targetParts = {
+                char:FindFirstChild("Head"),
+                char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso"),
+                char:FindFirstChild("LowerTorso"),
+                char:FindFirstChild("Left Arm") or char:FindFirstChild("LeftUpperArm"),
+                char:FindFirstChild("Right Arm") or char:FindFirstChild("RightUpperArm"),
+                char:FindFirstChild("Left Leg") or char:FindFirstChild("LeftUpperLeg"),
+                char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg"),
+                char:FindFirstChild("HumanoidRootPart")
+            }
+
+            for _, part in pairs(targetParts) do
+                if part and part:IsA("BasePart") then
+                    applyBoxESPToPart(part, color, playerFolder)
+                end
+            end
+
+            local tag = playerFolder:FindFirstChild("NameTag")
+            if not tag then
+                tag = Instance.new("BillboardGui")
+                tag.Name = "NameTag"
+                tag.AlwaysOnTop = true
+                tag.Size = UDim2.new(0, 100, 0, 30)
+                tag.StudsOffset = Vector3.new(0, 3.5, 0)
+
+                local label = Instance.new("TextLabel", tag)
+                label.Name = "Label"
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Font = Enum.Font.SourceSansBold
+                label.TextSize = 13
+                label.TextStrokeTransparency = 0
+                label.Parent = tag
+
+                tag.Parent = playerFolder
+            end
+
+            tag.Adornee = char.HumanoidRootPart
+            local dist = math.floor((Camera.CFrame.Position - char.HumanoidRootPart.Position).Magnitude)
+            tag.Label.Text = string.format("%s\n[%s] (%dm)", player.DisplayName, roleName, dist)
+            tag.Label.TextColor3 = color
+        else
+            local oldEsp = ESPFolder:FindFirstChild(player.Name)
+            if oldEsp then oldEsp:Destroy() end
+        end
+    end
+end
+
+-- Scan for Dropped Guns on Ground
+local function scanGroundGuns()
+    if not Settings.ESPEnabled then return end
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if (obj:IsA("Tool") or obj.Name == "GunDrop") and not isOwnedByPlayer(obj) then
+            local hasParticles = false
+            for _, desc in pairs(obj:GetChildren()) do
+                if desc:IsA("ParticleEmitter") or desc:IsA("Sparkles") or desc:IsA("Highlight") then
+                    hasParticles = true
+                    break
+                end
+            end
+
+            if hasParticles then
+                local handle = obj:FindFirstChild("Handle") or obj:FindFirstChildOfClass("BasePart")
+                if handle then
+                    local gunTag = ESPFolder:FindFirstChild("DroppedGun_" .. obj:GetDebugId())
+                    if not gunTag then
+                        gunTag = Instance.new("BillboardGui")
+                        gunTag.Name = "DroppedGun_" .. obj:GetDebugId()
+                        gunTag.AlwaysOnTop = true
+                        gunTag.Size = UDim2.new(0, 110, 0, 30)
+                        gunTag.StudsOffset = Vector3.new(0, 2, 0)
+
+                        local label = Instance.new("TextLabel", gunTag)
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.BackgroundTransparency = 1
+                        label.Text = "DROPPED GUN 🗲"
+                        label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                        label.Font = Enum.Font.SourceSansBold
+                        label.TextSize = 13
+                        label.TextStrokeTransparency = 0
+                        label.Parent = gunTag
+
+                        gunTag.Adornee = handle
+                        gunTag.Parent = ESPFolder
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 5. Functional Shoot Murderer Action
+function shootMurdererAction()
+    local murdererChar = nil
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local _, role = getPlayerRole(p)
+            if role == "Murderer" and p.Character and p.Character:FindFirstChild("Head") then
+                murdererChar = p.Character
+                break
+            end
+        end
+    end
+
+    if not murdererChar then return end
+
+    local gun = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+    if not (gun and (gun.Name:lower():find("gun") or gun.Name:lower():find("revolver"))) then
+        gun = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+        if gun and (gun.Name:lower():find("gun") or gun.Name:lower():find("revolver")) then
+            gun.Parent = LocalPlayer.Character
+        end
+    end
+
+    if gun then
+        local targetPos = murdererChar.Head.Position
+        local remote = gun:FindFirstChildOfClass("RemoteEvent") or gun:FindFirstChildOfClass("RemoteFunction")
+        if remote then
+            if remote:IsA("RemoteEvent") then
+                remote:FireServer(targetPos, murdererChar.Head)
+            elseif remote:IsA("RemoteFunction") then
+                remote:InvokeServer(targetPos, murdererChar.Head)
+            end
+        else
+            gun:Activate()
+        end
+    end
+end
+
+-- Smooth execution timers tuned for Redmi Note 12
+task.spawn(function()
+    while true do
+        pcall(updateESP)
+        task.wait(0.03) -- Smooth ~30 FPS ESP update rate
+    end
+end)
+
+task.spawn(function()
+    while true do
+        pcall(scanGroundGuns)
+        task.wait(1)
+    end
+end)
